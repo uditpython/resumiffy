@@ -53,26 +53,27 @@
                             {{ form.password2 }}
                         </div>
                         <div class="input-group mb-4">
-                            {{ form.role }}
+                            
+                            Select Role &nbsp&nbsp&nbsp&nbsp{{ form.role }}
                         </div>
                         <span class="text-error">{{ form.password2.errors }}</span>
                         
-                        <div class="form-group text-left">
+                        <!-- <div class="form-group text-left">
                             <div class="checkbox checkbox-fill d-inline">
                                 <input type="checkbox" name="checkbox-fill-1" id="checkbox-fill-a1" checked="">
                                 <label for="checkbox-fill-a1" class="cr"> Agree with <a href="#">terms</a></label>
                             </div>
-                        </div>
-                        <button type="submit" name="register" class="btn btn-primary shadow-2 mb-4">Register</button>
+                        </div> -->
+                        <button type="submit" name="register" class="btn btn-primary shadow-2 mb-4" style="
+                        margin-bottom: 100%;
+                        margin-top: 25%;
+                    ">Register</button>
 
                     </form>
 
                     <p class="mb-0 text-muted">Already have an account? <a href="{% url 'login' %}" >Login</a></p>
                     <br />
-                    <p class="mb-2 text-muted">
-                        &copy; <a target="_blank" href="https://codedthemes.com/">CodedThemes</a> 
-                        - <a target="_blank" href="https://appseed.us/admin-dashboards/django-dashboard-dattaable">Django Dashboard DattaAble</a>
-                    </p>
+                    
                 </div>
             </div>
         </div>

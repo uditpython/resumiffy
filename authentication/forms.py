@@ -9,6 +9,22 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from app.models import UserProfile
 
+
+# class MultiResumeField(forms.Field):
+#     '''anyfunction'''
+#     # def to_python(self, value):
+#     #     """Normalize data to a list of strings."""
+#     #     # Return an empty list if no input was given.
+#     #     if not value:
+#     #         return []
+#     #     return value.split(',')
+
+#     def validate(self, value):
+#         """Check if value consists only of valid emails."""
+#         # Use the parent's handling of required fields, etc.
+#         super().validate(value)
+        
+
 class LoginForm(forms.Form):
     username = forms.CharField(
         widget=forms.TextInput(
@@ -26,6 +42,13 @@ class LoginForm(forms.Form):
         ))
 
 class SignUpForm(UserCreationForm):
+    FRUIT_CHOICES= [
+            ('', ''),
+            ('Administrator', 'Administrator'),
+            ('Resume Worker', 'Resume Worker'),
+            ('Quality Controler', 'Quality Controller'),
+            
+            ]
     username = forms.CharField(
         widget=forms.TextInput(
             attrs={
@@ -54,13 +77,8 @@ class SignUpForm(UserCreationForm):
                 "class": "form-control"
             }
         ))
-    role = forms.CharField(
-        widget=forms.TextInput(
-            attrs={
-                "placeholder" : "Role",                
-                "class": "form-control"
-            }
-        ))
+    role= forms.CharField(label='What is your favorite fruit?', widget=forms.Select(choices=FRUIT_CHOICES,attrs = {'class':"dropdown-menu show",'style':"width: 100%;"}))
+
     class Meta:
         model = UserProfile
-        fields = ('username', 'email', 'password1', 'password2',)
+        fields = ('username', 'email', 'password1', 'password2','role')
