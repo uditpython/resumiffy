@@ -49,6 +49,23 @@ class SignUpForm(UserCreationForm):
             ('Quality Controler', 'Quality Controller'),
             
             ]
+
+    firstname = forms.CharField(
+        widget=forms.TextInput(
+            attrs={
+                "placeholder" : "First name",                
+                "class": "form-control"
+            }
+        ))
+
+    lastname = forms.CharField(
+        widget=forms.TextInput(
+            attrs={
+                "placeholder" : "Last name",                
+                "class": "form-control"
+            }
+        ))
+
     username = forms.CharField(
         widget=forms.TextInput(
             attrs={
@@ -81,4 +98,4 @@ class SignUpForm(UserCreationForm):
 
     class Meta:
         model = UserProfile
-        fields = ('username', 'email', 'password1', 'password2','role')
+        fields = ('firstname','lastname','username', 'email', 'password1', 'password2','role')

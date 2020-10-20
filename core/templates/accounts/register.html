@@ -33,6 +33,16 @@
                     <form role="form" method="post" action="">
 
                         {% csrf_token %}                    
+                        <div class="input-group mb-3">
+                            {{ form.firstname }} 
+                        
+                        &nbsp&nbsp
+                         
+                            {{ form.lastname }} 
+                        </div>
+                        <span class="text-error">{{ form.firstname.errors }}</span>
+                        <span class="text-error">{{ form.lastname.errors }}</span>
+
 
                         <div class="input-group mb-3">
                             {{ form.username }}

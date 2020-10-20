@@ -13,6 +13,8 @@ from django.contrib.auth.models import User
 from django.forms.utils import ErrorList
 from django.http import HttpResponse
 from .forms import LoginForm, SignUpForm
+from django.core import serializers
+import json
 
 def login_view(request):
     form = LoginForm(request.POST or None)
@@ -25,9 +27,23 @@ def login_view(request):
             username = form.cleaned_data.get("username")
             password = form.cleaned_data.get("password")
             user = authenticate(username=username, password=password)
+            
+            
             if user is not None:
                 login(request, user)
+                # assuming obj is a model instance
+                serialized_obj = serializers.serialize('json', [ user, ])
+                resdata = json.loads(serialized_obj)[0]
+                data = {}
+                
+                data["id"] = resdata['pk']
+                resdata = resdata["fields"]
+                data["email"] = resdata["email"]
+                data["name"] = resdata["first_name"] + " " + resdata["last_name"]
+                data["email"] = resdata["email"]
+                
                 return redirect("/ui-forms.html")
+                
             else:    
                 msg = 'Invalid credentials'    
         else:
@@ -51,7 +67,7 @@ def register_user(request):
             msg     = 'User created.'
             success = True
             
-            #return redirect("/login/")
+            return redirect("/login/")
 
         else:
             msg = 'Form is not valid'    
