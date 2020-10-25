@@ -15,5 +15,8 @@ urlpatterns = [
 
     # The home page
     path('', views.index, name='home'),
+    path('orders/<int:user_id>/', views.user_profile_view),
+    path('ordersinfo/', views.orders_view),
+    # path('download_file/', views.orders_view),
     path('userinfo/', views.userinfo, name="userinfo"),
 ]

@@ -42,7 +42,7 @@ def login_view(request):
                 data["name"] = resdata["first_name"] + " " + resdata["last_name"]
                 data["email"] = resdata["email"]
                 
-                return redirect("/ui-forms.html")
+                return redirect("/ordersinfo")
                 
             else:    
                 msg = 'Invalid credentials'    
