@@ -16,6 +16,8 @@
                 <div class="page-wrapper">
                     <!-- [ Main Content ] start -->
                     <div class="row">
+                        <!-- <input type="file" accept="image/*" aria-label="Upload your profile picture" class="swal2-file" placeholder="" style="display: flex;"> -->
+                          
                         <!--[ daily sales section ] start-->
                         <!-- <div class="col-md-6 col-xl-4">
                             <div class="card daily-sales">
@@ -615,14 +617,119 @@
 
 <!-- Specific Page JS goes HERE  -->
 {% block javascripts %}
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 <script>
+
+var check = function(){
+   
+        setTimeout(check, 1000); // check again in a second
+   
+}
+
+function uploadresume(test) {
+    var fileSelect = document.getElementById("input-"+test);
+    var files = fileSelect.files;
+    var formData = new FormData();
+    var file = files[0]; 
+    if (files.length == 0){
+        swal("No file selected!", "Please select the Files");
+    }
+    else{
+        formData.append('data', JSON.stringify(obj[test]));
+        formData.append('myfile', file);
+        
+        $.ajax({
+    type: "POST",
+    url: "/upload_resume/",
+    data: formData,
+    csrfmiddlewaretoken: '{{ csrf_token }}',
+    //use contentType, processData for sure.
+    contentType: false,
+    processData: false,
+    // beforeSend: function() {
+    //     $('.modal .ajax_data').prepend('<img src="' +
+    //         base_url +
+    //         '"asset/images/ajax-loader.gif" />');
+    //     //$(".modal .ajax_data").html("<pre>Hold on...</pre>");
+    //     $(".modal").modal("show");
+    // },
+    success: function(msg) {
+        swal("Congrats! Your have assigned new resume!", {
+      icon: "success",
+    });
+    },
+    error: function() {
+       
+    }
+});
+        
+    
+
+       
+    }
+    
+   
+}
+
+
+
+
+
+function startactivity(test) {
+
+
+
+
+
+    swal({
+  title: "Are you sure ?",
+  text: "Do you realy want to start work on this resume",
+  icon: "info",
+  buttons: true,
+  dangerMode: true,
+})
+.then((willDelete) => {
+  if (willDelete) {
+    console.log("hello");
+    console.log(test);
+
+    $.ajax({
+        type: 'POST',
+        url: "/assign_worker/",
+        data: {"url":obj[test],
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+        },
+        success: function (response) {
+
+            swal("Congrats! Your have assigned new resume!", {
+      icon: "success",
+    });
+   check();
+   window.location.reload();
+            // if not valid user, alert the user
+            
+        },
+        error: function (response) {
+            console.log(response)
+        }
+    })
+
+}
+    else {
+   
+  }
+});}
+
+
+
+
 
 function myFunction(test) {
 
 $.ajax({
         type: 'POST',
         url: "/download_file/",
-        data: {"url":test,
+        data: {"url":obj[test],
         csrfmiddlewaretoken: '{{ csrf_token }}'
         },
         success: function (response) {
@@ -661,7 +768,7 @@ var newRow;
                 a.href = obj[i][key[j]];  
                 
                 a.download="resume.pdf";
-                a.onclick= myFunction(a.href)
+                // a.onclick= myFunction(a.href)
                 // Set the title. 
                 a.title = "Download Resume";  
                   
@@ -709,6 +816,71 @@ var newRow;
                 newCell.appendChild(a);
                 }
 
+                else if (key[j] == "status" & obj[i][key[j]] == 'not started'){
+                    var a = document.createElement('BUTTON');  
+                
+                // Create the text node for anchor element. 
+                var link = document.createTextNode("START WORK");
+                
+                a.className  = "btn btn-primary";
+                a.setAttribute("onclick",  "startactivity('"+i + "')");
+                    
+                // a.setAttribute("href", obj[i][key[j]]);
+
+                  
+                // Append the text node to anchor element. 
+                a.appendChild(link);  
+                a.href = obj[i][key[j]];  
+                
+                a.download="resume.pdf";
+                // Set the title. 
+                a.title = "Download Resume";  
+                  
+                // Set the href property. 
+                newCell.appendChild(a);
+                }
+
+                else if (key[j] == "status" & obj[i][key[j]] == 'started'){
+                    var a = document.createElement('BUTTON');  
+                
+                // Create the text node for anchor element. 
+                var link = document.createTextNode("UPLOAD RESUME");
+                
+                a.className  = "btn btn-primary";
+              
+                a.setAttribute("onclick",  "uploadresume('"+i + "')");
+
+                // a.setAttribute("href", obj[i][key[j]]);
+
+                  
+                // Append the text node to anchor element. 
+                a.appendChild(link);  
+                
+                
+                // Set the href property. 
+                newCell.appendChild(a);
+                var a = document.createElement('input');  
+                
+                // Create the text node for anchor element. 
+                
+                // a.className  = "btn btn-primary";
+              
+                a.setAttribute("type",  "file");
+                a.id = "input-"+i
+
+                // a.setAttribute("href", obj[i][key[j]]);
+
+                  
+                // Append the text node to anchor element. 
+                // a.appendChild(link);  
+                
+                
+                // Set the href property. 
+                newCell.appendChild(a);
+
+
+
+                }
 
 
                 

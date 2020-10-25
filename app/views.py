@@ -10,24 +10,14 @@ from django.http import HttpResponse
 from django import template
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_protect
-from app.models import UserProfile
+from app.models import UserProfile,OrderInfo
 import json
+from django.views.decorators.csrf import csrf_exempt
+from django.core.files.storage import FileSystemStorage
 from woocommerce import API
+from django.views.static import serve
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+import os
 coll = {}
 coll["field_5f3555c914f44"] = "name"
 coll["field_5f3555f214f45"] = "dob"
@@ -98,11 +88,39 @@ def pages(request):
         html_template = loader.get_template( 'page-500.html' )
         return HttpResponse(html_template.render(context, request))
 
+
+@login_required(login_url="/login/")
+@require_http_methods(["GET", "POST"])
+@csrf_exempt
+def upload_resume(request):
+    uploaded_file = request.FILES['myfile']
+    fs = FileSystemStorage()
+    name = fs.save(uploaded_file.name, uploaded_file)
+    url = fs.url(name)
+    url = "/view_image/"+url
+    import pdb; pdb.set_trace()
+    data = {"staus":"done"}
+    return HttpResponse( json.dumps( data ) )
+
+@login_required(login_url="/login/")
+@require_http_methods(["GET", "POST"])
+@csrf_exempt
+def view_image(request,filepath):
+#    filepath = "file_UFTs8qD.pdf"
+   return serve(request, os.path.basename(filepath), os.path.dirname(filepath))
+   
+
 @require_http_methods(["GET", "POST"])
 def orders_view(request):
     data = wcapi.get("orders")
     data = json.loads(data.text)
     final_result = []
+    
+    order_info = OrderInfo.objects.all()
+    order_dict = {}
+
+    for i in order_info:
+        order_dict[i.order_id] = i
     for i in data:
         
         for j in i["line_items"]:
@@ -121,6 +139,16 @@ def orders_view(request):
                 result["uploaded_image"] = ''
             result["order_details"] = "/orders/"+result["order_number"]
             
+            if result["order_number"] in order_dict and  result["product"] == order_dict[result["order_number"]].package:
+               
+                if  order_dict[result["order_number"]].resume_worker_status == "assigned":
+                
+                    result["status"] = 'started'
+                else:
+                    result["status"] = 'submitted'
+                
+            else:
+                result["status"] = 'not started'
             
             final_result.append(result)
     return render(request, "index.html", {"data": json.dumps(final_result)})
@@ -177,6 +205,29 @@ def user_profile_view(request,user_id):
             result["profession"] = ''
             result['tell_us_about_yourself'] = ''
     return render(request, "order_details.html", {"data": json.dumps(result)})
+
+@require_http_methods(["GET", "POST"])
+@login_required(login_url="/login/")
+def assign_worker(request):
+    
+
+    try:
+        new_order= OrderInfo()
+        new_order.order_id = request.POST['url[order_number]']
+        new_order.package = request.POST['url[product]']
+        new_order.email = request.POST['url[email]']
+    
+        new_order.resume_url = request.POST['url[uploaded_resume]']
+        new_order.resume_worker_status = "assigned"
+        new_order.status = "resume worker assigned" 
+        new_order.resume_worker = UserProfile.objects.get(id = request.user.id)
+        new_order.save()
+    except:
+        pass
+
+    data = {"staus":"done"}
+    return HttpResponse( json.dumps( data ) )
+
 
 @require_http_methods(["GET", "POST"])
 def userinfo(request,data=None):

@@ -17,6 +17,9 @@ urlpatterns = [
     path('', views.index, name='home'),
     path('orders/<int:user_id>/', views.user_profile_view),
     path('ordersinfo/', views.orders_view),
-    # path('download_file/', views.orders_view),
+    path('assign_worker/', views.assign_worker),
+    path('upload_resume/',views.upload_resume),
     path('userinfo/', views.userinfo, name="userinfo"),
+    path('view_image/<str:filepath>',views.view_image),
+    
 ]
