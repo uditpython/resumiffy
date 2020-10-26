@@ -98,7 +98,13 @@ def upload_resume(request):
     name = fs.save(uploaded_file.name, uploaded_file)
     url = fs.url(name)
     url = "/view_image/"+url
-    import pdb; pdb.set_trace()
+    order_det = json.loads(request.POST.get('data'))
+    order_info = OrderInfo.objects.filter(order_id= order_det["order_number"],package = order_det["product"]).first()
+    
+
+    order_info.new_resume_url = url
+    order_info.resume_worker_status = "QC pending"
+    order_info.save()
     data = {"staus":"done"}
     return HttpResponse( json.dumps( data ) )
 
@@ -117,10 +123,12 @@ def orders_view(request):
     final_result = []
     
     order_info = OrderInfo.objects.all()
+    
     order_dict = {}
 
     for i in order_info:
-        order_dict[i.order_id] = i
+        order_dict[i.order_id+"-" + i.package] = i
+        
     for i in data:
         
         for j in i["line_items"]:
@@ -138,18 +146,56 @@ def orders_view(request):
             else:
                 result["uploaded_image"] = ''
             result["order_details"] = "/orders/"+result["order_number"]
-            
-            if result["order_number"] in order_dict and  result["product"] == order_dict[result["order_number"]].package:
-               
-                if  order_dict[result["order_number"]].resume_worker_status == "assigned":
+            worker = result["order_number"] + "-" + result["product"]
+            if worker in order_dict:
                 
-                    result["status"] = 'started'
+                if  order_dict[worker].resume_worker_status == "assigned":
+                    
+                    if order_dict[worker].resume_worker.id == request.user.id:
+                        result["status"] = 'started'
+                    else:
+                        result["status"] = 'Another worker is working on'
+                    result["resume_status"] = "work has started"
+                    
+                   
                 else:
-                    result["status"] = 'submitted'
-                
+                    
+                    if order_dict[worker].resume_worker.id == request.user.id:
+                        result["status"] = 'started'
+                    else:
+                        result["status"] = 'Another worker is working on'
+                    result["resume_status"] = order_dict[worker].resume_worker_status
+                    
+                if order_dict[worker].new_resume_url == None:
+                    result["resume_new_url"] = ''
+                else:
+                    result["resume_new_url"] = order_dict[worker].new_resume_url
+                result["number_rejected"] = order_dict[worker].rejected
             else:
                 result["status"] = 'not started'
+                result["resume_status"] = "Work has not started"
+                result["resume_new_url"] = ''
+                result["number_rejected"] = ''
+
+            if  result["resume_status"] == "APPROVED":
+               
+                result["status"] = "DELIVERED"
+            else:
+                result["status"] = "IN PROGESS"
             
+            if result["resume_new_url"] != '' and  result["resume_status"] == 'QC pending':
+                if order_dict[worker].resume_worker.id == request.user.id:
+                    result['qc_check'] = "You are working on Resume So Can't Do QC Check "
+                else:
+                    result['qc_check'] = "PENDING"
+            else:
+                
+                if result["resume_status"] == "APPROVED":
+                     result['qc_check'] = 'APPROVED'
+                else:
+                    result['qc_check'] = ''
+            
+
             final_result.append(result)
     return render(request, "index.html", {"data": json.dumps(final_result)})
 
@@ -206,6 +252,21 @@ def user_profile_view(request,user_id):
             result['tell_us_about_yourself'] = ''
     return render(request, "order_details.html", {"data": json.dumps(result)})
 
+@require_http_methods(["GET", "POST"])
+
+def qc_status(request):
+    
+    if request.POST.get('status') == "approve":
+        order_numeber = request.POST['url[order_number]']
+        package = request.POST['url[product]']
+        order_det = OrderInfo.objects.filter(order_id=order_numeber,package=package).first()
+        order_det.status= "APPROVED"
+        order_det.resume_worker_status = "APPROVED"
+        order_det.save()
+    data = {"staus":"done"}
+    return HttpResponse( json.dumps( data ) )
+
+    
 @require_http_methods(["GET", "POST"])
 @login_required(login_url="/login/")
 def assign_worker(request):

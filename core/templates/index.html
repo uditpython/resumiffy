@@ -454,9 +454,11 @@
                                                 <th>View Order Detail</th>
                                                 <th>Upload Resume</th>
                                                 
-                                                <th>Job Activity</th>
-                                                <th>QC Done</th>
+                                                <th>Job Status</th>
+                                                <th></th>
+                                                
                                                 <th>Number of Times Rejected</th>
+                                                <th>QC APPROVAL</th>
                                                 <th>Approved</th>
 
                                                 <th>Status</th>
@@ -654,9 +656,12 @@ function uploadresume(test) {
     //     $(".modal").modal("show");
     // },
     success: function(msg) {
-        swal("Congrats! Your have assigned new resume!", {
+        swal("Congrats! You have successfully submitted Resume! QC check is pending", {
       icon: "success",
-    });
+    })
+    check();
+   window.location.reload();
+
     },
     error: function() {
        
@@ -671,6 +676,108 @@ function uploadresume(test) {
    
 }
 
+
+function approve(test) {
+
+
+
+
+
+swal({
+title: "Are you sure ?",
+text: "Do you realy want to Approve",
+icon: "success",
+buttons: true,
+dangerMode: true,
+})
+.then((willDelete) => {
+if (willDelete) {
+console.log("hello");
+console.log(test);
+
+$.ajax({
+    type: 'POST',
+    url: "/qc_status/",
+    data: {"url":obj[test],
+            "status":"approve",
+    csrfmiddlewaretoken: '{{ csrf_token }}'
+    },
+    success: function (response) {
+
+        swal("Thanks for Approving the Resume!!", {
+  icon: "success",
+});
+check();
+window.location.reload();
+        // if not valid user, alert the user
+        
+    },
+    error: function (response) {
+        console.log(response)
+    }
+})
+
+}
+else {
+
+}
+});}
+
+
+
+
+
+
+
+
+
+
+
+function reject(test) {
+
+
+
+
+
+swal({
+title: "Are you sure ?",
+text: "Do you realy want to Reject",
+icon: "info",
+buttons: true,
+dangerMode: true,
+})
+.then((willDelete) => {
+if (willDelete) {
+console.log("hello");
+console.log(test);
+
+$.ajax({
+    type: 'POST',
+    url: "/qc_status/",
+    data: {"url":obj[test],
+            "status":"reject",
+    csrfmiddlewaretoken: '{{ csrf_token }}'
+    },
+    success: function (response) {
+
+        swal("Thanks for confirming  on the rejection", {
+  icon: "info",
+});
+check();
+window.location.reload();
+        // if not valid user, alert the user
+        
+    },
+    error: function (response) {
+        console.log(response)
+    }
+})
+
+}
+else {
+
+}
+});}
 
 
 
@@ -775,6 +882,21 @@ var newRow;
                 // Set the href property. 
                 newCell.appendChild(a);
                 }
+
+                else if (key[j] == "resume_new_url" & obj[i][key[j]] != ''){
+                    var a = document.createElement('a');  
+                
+                // Create the text node for anchor element. 
+                var link = document.createTextNode("Download Updated Resume"); 
+                  
+                // Append the text node to anchor element. 
+                a.appendChild(link);  
+                a.href = obj[i][key[j]];  
+                
+                
+                // Set the href property. 
+                newCell.appendChild(a);
+                }
                 else if   (key[j] == "uploaded_image" & obj[i][key[j]] != ''){
                     var a = document.createElement('a');  
                 
@@ -835,6 +957,45 @@ var newRow;
                 a.download="resume.pdf";
                 // Set the title. 
                 a.title = "Download Resume";  
+                  
+                // Set the href property. 
+                newCell.appendChild(a);
+                }
+
+                else if (key[j] == "qc_check" & obj[i][key[j]] == 'PENDING'){
+                    var a = document.createElement('BUTTON');  
+                
+                // Create the text node for anchor element. 
+                var link = document.createTextNode("APPROVE");
+                
+                a.className  = "btn btn-success";
+                a.setAttribute("onclick",  "approve('"+i + "')");
+                    
+                // a.setAttribute("href", obj[i][key[j]]);
+
+                  
+                // Append the text node to anchor element. 
+                a.appendChild(link);  
+               
+                  
+                // Set the href property. 
+                newCell.appendChild(a);
+
+
+                var a = document.createElement('BUTTON');  
+                
+                // Create the text node for anchor element. 
+                var link = document.createTextNode("REJECT");
+                
+                a.className  = "btn btn-danger";
+                a.setAttribute("onclick",  "reject('"+i + "')");
+                    
+                // a.setAttribute("href", obj[i][key[j]]);
+
+                  
+                // Append the text node to anchor element. 
+                a.appendChild(link);  
+               
                   
                 // Set the href property. 
                 newCell.appendChild(a);

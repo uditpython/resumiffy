@@ -21,5 +21,7 @@ urlpatterns = [
     path('upload_resume/',views.upload_resume),
     path('userinfo/', views.userinfo, name="userinfo"),
     path('view_image/<str:filepath>',views.view_image),
+    path('qc_status/',views.qc_status),
+    
     
 ]
