@@ -6,7 +6,61 @@
 {% block stylesheets %}{% endblock stylesheets %}
 
 {% block content %}
+<div id="myModal" class="modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" style="width: 50%;margin-left: 20%;">
 
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel" style="
+            color: cornflowerblue;
+            margin-left: 25%;
+            
+        ">Reason for Rejection</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <textarea id = "rejection reason" class="form-control" rows="10" ></textarea>
+          </div>
+          <div class="modal-footer">
+            
+            <button type="button" class="btn btn-primary" onclick="submitreject()">Reject</button>
+          </div>
+        </div>
+      </div>
+
+
+  
+  </div>
+  <div id="myModalupload" class="modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true" style="width: 50%;margin-left: 20%;">
+
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel" style="
+            color: cornflowerblue;
+            margin-left: 25%;
+            
+        ">Reason for Rejection</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <textarea id = "rejection upload" class="form-control" rows="10" ></textarea>
+          </div>
+          <div class="modal-footer">
+            
+            <button type="button" class="btn btn-primary" onclick="submitrejectupload()">Reject</button>
+          </div>
+        </div>
+      </div>
+
+
+  
+  </div>
+  
     <div class="pcoded-content">
         <div class="pcoded-inner-content">
             <!-- [ breadcrumb ] start -->
@@ -361,7 +415,7 @@
                                 </li>
                             </ul> -->
                             <div class="tab-content" id="myTabContent" style="
-                            width: 400%;
+                            width: 500%;
                         ">
                                 <!-- <div class="tab-pane fade" id="home" role="tabpanel" aria-labelledby="home-tab">
                                     <table class="table table-hover">
@@ -455,13 +509,14 @@
                                                 <th>Upload Resume</th>
                                                 
                                                 <th>Job Status</th>
+                                                <th>Rejection Reason</th>
                                                 <th></th>
                                                 
                                                 <th>Number of Times Rejected</th>
                                                 <th>QC APPROVAL</th>
-                                                <th>Approved</th>
+                                             
 
-                                                <th>Status</th>
+                                                <th>Final Status</th>
                                                 <th class="text-right"></th>
                                             </tr>
                                         </thead>
@@ -627,6 +682,7 @@ var check = function(){
         setTimeout(check, 1000); // check again in a second
    
 }
+var selectedindex = -1;
 
 function uploadresume(test) {
     var fileSelect = document.getElementById("input-"+test);
@@ -700,6 +756,7 @@ $.ajax({
     url: "/qc_status/",
     data: {"url":obj[test],
             "status":"approve",
+           
     csrfmiddlewaretoken: '{{ csrf_token }}'
     },
     success: function (response) {
@@ -727,15 +784,128 @@ else {
 
 
 
+function submitreject() {
+
+test = selectedindex 
+
+var reason = document.getElementById("rejection reason").value
+
+if (reason.length == 0)
+{
+    swal("You didnt enter reason for rejection. Please enter details for rejection", {
+      icon: "error",
+    });
+}
+else{
+swal({
+title: "Are you sure ?",
+text: "Do you realy want to submit the reason for Rejection",
+icon: "info",
+buttons: true,
+dangerMode: true,
+})
+.then((willDelete) => {
+if (willDelete) {
+
+$.ajax({
+    type: 'POST',
+    url: "/qc_status/",
+    data: {"url":obj[test],
+            "status":"reject",
+            "reason":reason,
+            "performer":"worker",
+    csrfmiddlewaretoken: '{{ csrf_token }}'
+    },
+    success: function (response) {
+        var modal = document.getElementById("myModal");
+modal.style.display = "none";
+        swal("Thanks for confirming  on the rejection", {
+  icon: "info",
+});
+
+check();
+window.location.reload();
+        // if not valid user, alert the user
+        
+    },
+    error: function (response) {
+        console.log(response)
+    }
+})
+
+}
+else {
+
+}
+});
+}
+}
+
+
+
+function submitrejectupload() {
+
+test = selectedindex 
+
+var reason = document.getElementById("rejection upload").value
+
+if (reason.length == 0)
+{
+    swal("You didnt enter reason for rejection. Please enter details for rejection", {
+      icon: "error",
+    });
+}
+else{
+swal({
+title: "Are you sure ?",
+text: "Do you realy want to submit the reason for Rejection",
+icon: "info",
+buttons: true,
+dangerMode: true,
+})
+.then((willDelete) => {
+if (willDelete) {
+
+$.ajax({
+    type: 'POST',
+    url: "/qc_status/",
+    data: {"url":obj[test],
+            "status":"reject",
+            "reason":reason,
+            "performer":"qc",
+    csrfmiddlewaretoken: '{{ csrf_token }}'
+    },
+    success: function (response) {
+        var modal = document.getElementById("myModal");
+modal.style.display = "none";
+        swal("Thanks for confirming  on the rejection", {
+  icon: "info",
+});
+
+check();
+window.location.reload();
+        // if not valid user, alert the user
+        
+    },
+    error: function (response) {
+        console.log(response)
+    }
+})
+
+}
+else {
+
+}
+});
+}
+}
 
 
 
 
+function reject_upload(test) {
 
-
-function reject(test) {
-
-
+selectedindex = test
 
 
 
@@ -748,30 +918,103 @@ dangerMode: true,
 })
 .then((willDelete) => {
 if (willDelete) {
-console.log("hello");
-console.log(test);
+var modal = document.getElementById("myModalupload");
 
-$.ajax({
-    type: 'POST',
-    url: "/qc_status/",
-    data: {"url":obj[test],
-            "status":"reject",
-    csrfmiddlewaretoken: '{{ csrf_token }}'
-    },
-    success: function (response) {
+modal.style.display = "block";
+var span = document.getElementsByClassName("close")[0];
+span.onclick = function() {
+  modal.style.display = "none";
+}
+// $.ajax({
+//     type: 'POST',
+//     url: "/qc_status/",
+//     data: {"url":obj[test],
+//             "status":"reject",
+//     csrfmiddlewaretoken: '{{ csrf_token }}'
+//     },
+//     success: function (response) {
 
-        swal("Thanks for confirming  on the rejection", {
-  icon: "info",
-});
-check();
-window.location.reload();
-        // if not valid user, alert the user
+//         swal("Thanks for confirming  on the rejection", {
+//   icon: "info",
+// });
+// check();
+// window.location.reload();
+//         // if not valid user, alert the user
         
-    },
-    error: function (response) {
-        console.log(response)
-    }
+//     },
+//     error: function (response) {
+//         console.log(response)
+//     }
+// })
+
+}
+else {
+
+}
+});}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function reject(test) {
+
+selectedindex = test
+
+
+
+swal({
+title: "Are you sure ?",
+text: "Do you realy want to Reject",
+icon: "info",
+buttons: true,
+dangerMode: true,
 })
+.then((willDelete) => {
+if (willDelete) {
+var modal = document.getElementById("myModal");
+
+modal.style.display = "block";
+var span = document.getElementsByClassName("close")[0];
+span.onclick = function() {
+  modal.style.display = "none";
+}
+// $.ajax({
+//     type: 'POST',
+//     url: "/qc_status/",
+//     data: {"url":obj[test],
+//             "status":"reject",
+//     csrfmiddlewaretoken: '{{ csrf_token }}'
+//     },
+//     success: function (response) {
+
+//         swal("Thanks for confirming  on the rejection", {
+//   icon: "info",
+// });
+// check();
+// window.location.reload();
+//         // if not valid user, alert the user
+        
+//     },
+//     error: function (response) {
+//         console.log(response)
+//     }
+// })
 
 }
 else {
@@ -807,12 +1050,19 @@ function startactivity(test) {
         csrfmiddlewaretoken: '{{ csrf_token }}'
         },
         success: function (response) {
-
+            if (JSON.parse(response)["status"] == "done"){
             swal("Congrats! Your have assigned new resume!", {
       icon: "success",
     });
    check();
    window.location.reload();
+            }
+        else{
+            swal("We cant assign new resume as you are already working on 4 resume", {
+      icon: "error",
+    });
+        }
+   
             // if not valid user, alert the user
             
         },
@@ -854,7 +1104,8 @@ $.ajax({
 
 var obj = JSON.parse("{{data|escapejs}}"); 
 var tableRef = document.getElementById('order_details').getElementsByTagName('tbody')[0];
-var key = Object.keys(obj[0])
+var key = ["order_number","product","email","uploaded_resume","uploaded_image", "order_details", "status","resume_status","rejection_reason","resume_new_url","number_rejected", "qc_check","final_status"]
+
 var newRow;
 // Insert a row in the table at row index 0
         var i;
@@ -985,7 +1236,7 @@ var newRow;
                 var a = document.createElement('BUTTON');  
                 
                 // Create the text node for anchor element. 
-                var link = document.createTextNode("REJECT");
+                var link = document.createTextNode("REJECT AND SEND BACK");
                 
                 a.className  = "btn btn-danger";
                 a.setAttribute("onclick",  "reject('"+i + "')");
@@ -999,6 +1250,25 @@ var newRow;
                   
                 // Set the href property. 
                 newCell.appendChild(a);
+
+                var a = document.createElement('BUTTON');  
+                
+                // Create the text node for anchor element. 
+                var link = document.createTextNode("REJECT AND UPLOAD");
+                
+                a.className  = "btn btn-info";
+                a.setAttribute("onclick",  "reject_upload('"+i + "')");
+                    
+                // a.setAttribute("href", obj[i][key[j]]);
+
+                  
+                // Append the text node to anchor element. 
+                a.appendChild(link);  
+               
+                  
+                // Set the href property. 
+                newCell.appendChild(a);
+
                 }
 
                 else if (key[j] == "status" & obj[i][key[j]] == 'started'){
@@ -1050,6 +1320,11 @@ var newRow;
                 // Append a text node to the cell
                 var x = document.createElement("h6");
                 var text = obj[i][key[j]];
+                if (text == 'QC_REJECTED'){
+                    text = 'QC REJECTED'    
+                    x.style.color = "red"
+                    x.style.fontWeight = "1000"
+                }
                 var t = document.createTextNode(text);
                 x.appendChild(t);
                 newCell.appendChild(x);

@@ -16,8 +16,16 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import FileSystemStorage
 from woocommerce import API
 from django.views.static import serve
-
+from background_task import background
+from datetime import timedelta
 import os
+from django.conf import settings 
+from django.core.mail import send_mail
+
+from django.core.mail import EmailMessage
+
+
+
 coll = {}
 coll["field_5f3555c914f44"] = "name"
 coll["field_5f3555f214f45"] = "dob"
@@ -54,6 +62,34 @@ wcapi = API(
     consumer_secret="cs_784847f6211887c0b0ae43a43d66e49cec675f53",
     version="wc/v3"
 )
+
+@background(schedule=60)
+def notify_order(order_numeber,package,first_name):
+   
+    order_info = OrderInfo.objects.filter(order_id= order_numeber,package = package).first()
+    
+    if order_info.worker_upload == 0:
+    # lookup user by id and send them a message
+        subject = 'Order Not fulfilled'
+        message = f'Hi , Resume not submitted since last 24 hours for order number ' + order_numeber + " for package " + package + "." +  first_name + " is working on it."
+        message = ' '.join(message.split())
+        email_from = settings.EMAIL_HOST_USER 
+        recipient_list = ["uditmital86@gmail.com", ] 
+        send_mail( subject, message, email_from, recipient_list ) 
+
+@background(schedule=60)
+def notify_qc(order_numeber,package):
+   
+    order_info = OrderInfo.objects.filter(order_id= order_numeber,package = package).first()
+    
+    if order_info.qc_upload == 0:
+    # lookup user by id and send them a message
+        subject = 'QC not Done'
+        message = f'Hi , QC not done for resume since last 24 hours for order number ' + order_numeber + " for package " + package + "."
+        message = ' '.join(message.split())
+        email_from = settings.EMAIL_HOST_USER 
+        recipient_list = ["uditmital86@gmail.com", ] 
+        send_mail( subject, message, email_from, recipient_list ) 
 
 @login_required(login_url="/login/")
 def index(request):
@@ -101,10 +137,13 @@ def upload_resume(request):
     order_det = json.loads(request.POST.get('data'))
     order_info = OrderInfo.objects.filter(order_id= order_det["order_number"],package = order_det["product"]).first()
     
-
+    order_info.worker_upload += 1
     order_info.new_resume_url = url
+    order_info.filename = name
+    order_info.resume_status = "QC pending"
     order_info.resume_worker_status = "QC pending"
     order_info.save()
+    notify_qc(order_info.order_id,order_info.package,schedule=timedelta(minutes=24*60))
     data = {"staus":"done"}
     return HttpResponse( json.dumps( data ) )
 
@@ -118,7 +157,10 @@ def view_image(request,filepath):
 
 @require_http_methods(["GET", "POST"])
 def orders_view(request):
-    data = wcapi.get("orders")
+    data = None
+    while data is None:
+        data = wcapi.get("orders")
+      
     data = json.loads(data.text)
     final_result = []
     
@@ -146,6 +188,9 @@ def orders_view(request):
             else:
                 result["uploaded_image"] = ''
             result["order_details"] = "/orders/"+result["order_number"]
+            # if result["order_number"] == '2093':
+            #     import pdb
+            #     pdb.set_trace()
             worker = result["order_number"] + "-" + result["product"]
             if worker in order_dict:
                 
@@ -159,11 +204,18 @@ def orders_view(request):
                     
                    
                 else:
-                    
-                    if order_dict[worker].resume_worker.id == request.user.id:
-                        result["status"] = 'started'
+                   
+                    if order_dict[worker].status == 'qc worker assigned':
+                        
+                        if order_dict[worker].qc_worker.id == request.user.id:
+                            result["status"] = 'started'
+                        else:
+                            result["status"] = 'QC worker is working on' 
                     else:
-                        result["status"] = 'Another worker is working on'
+                        if order_dict[worker].resume_worker.id == request.user.id:
+                            result["status"] = 'started'
+                        else:
+                            result["status"] = 'Another worker is working on'
                     result["resume_status"] = order_dict[worker].resume_worker_status
                     
                 if order_dict[worker].new_resume_url == None:
@@ -176,13 +228,8 @@ def orders_view(request):
                 result["resume_status"] = "Work has not started"
                 result["resume_new_url"] = ''
                 result["number_rejected"] = ''
-
             if  result["resume_status"] == "APPROVED":
-               
                 result["status"] = "DELIVERED"
-            else:
-                result["status"] = "IN PROGESS"
-            
             if result["resume_new_url"] != '' and  result["resume_status"] == 'QC pending':
                 if order_dict[worker].resume_worker.id == request.user.id:
                     result['qc_check'] = "You are working on Resume So Can't Do QC Check "
@@ -195,7 +242,19 @@ def orders_view(request):
                 else:
                     result['qc_check'] = ''
             
-
+            if result["status"] == "DELIVERED":
+                result["final_status"] = result["status"] 
+            elif  result["resume_status"] == "Work has not started":
+                result["final_status"] = "WORK HAS NOT STARTED"
+            elif result["resume_status"] == 'QC pending':
+                result["final_status"] = "QC pending"
+            else:
+                result["final_status"] = "IN PROGRESS"
+            if  result["resume_status"] == 'QC_REJECTED':
+                result["rejection_reason"] =  order_dict[worker].rejection_reason
+            else:
+                result["rejection_reason"] = ''
+                
             final_result.append(result)
     return render(request, "index.html", {"data": json.dumps(final_result)})
 
@@ -252,6 +311,18 @@ def user_profile_view(request,user_id):
             result['tell_us_about_yourself'] = ''
     return render(request, "order_details.html", {"data": json.dumps(result)})
 
+@background(schedule=60)
+def send_delivery(id):
+
+    email_from = settings.EMAIL_HOST_USER 
+    order_det = OrderInfo.objects.filter(id=id).first()
+    
+    recipient_list = [order_det.email, ] 
+    email = EmailMessage(
+            'Resume is Ready', 'Here is your attached Resume.', settings.EMAIL_HOST_USER, recipient_list)
+    email.attach_file(order_det.filename)
+    email.send()
+
 @require_http_methods(["GET", "POST"])
 
 def qc_status(request):
@@ -260,9 +331,41 @@ def qc_status(request):
         order_numeber = request.POST['url[order_number]']
         package = request.POST['url[product]']
         order_det = OrderInfo.objects.filter(order_id=order_numeber,package=package).first()
+        
+        order_det.qc_worker = UserProfile.objects.get(id = request.user.id)
         order_det.status= "APPROVED"
         order_det.resume_worker_status = "APPROVED"
+        order_det.qc_upload += 1
+        send_delivery(order_det.id)
         order_det.save()
+
+
+    elif request.POST.get('status') == "reject":
+       
+        order_numeber = request.POST['url[order_number]']
+        package = request.POST['url[product]']
+        order_det = OrderInfo.objects.filter(order_id=order_numeber,package=package).first()
+        order_det.qc_worker = UserProfile.objects.get(id = request.user.id)
+        order_det.resume_worker_status = "QC_REJECTED"
+        order_det.rejected += 1
+        order_det.qc_upload += 1
+        order_det.rejection_reason = request.POST['reason']
+        if request.POST['performer'] != 'qc':
+            order_det.status = "resume worker assigned" 
+            order_det.save()
+            user = UserProfile.objects.filter(id =  order_det.resume_worker.id).first()
+            if order_det.rejected > 1:
+                subject = 'Resume Got Rejected'
+                message = f'Hi , QC has rejected Resume for Order Number' + order_numeber + " for package " + package + "." +  user.first_name + " is working on it."
+                message = ' '.join(message.split())
+                email_from = settings.EMAIL_HOST_USER 
+                recipient_list = ["uditmital86@gmail.com", ] 
+                send_mail( subject, message, email_from, recipient_list ) 
+        else:
+            
+            order_det.status = 'qc worker assigned'
+            order_det.save()
+            
     data = {"staus":"done"}
     return HttpResponse( json.dumps( data ) )
 
@@ -271,22 +374,25 @@ def qc_status(request):
 @login_required(login_url="/login/")
 def assign_worker(request):
     
+    user_id = UserProfile.objects.get(id = request.user.id)
+    order_cnt = OrderInfo.objects.filter(resume_worker = UserProfile.objects.get(id = request.user.id)).exclude(status = 'APPROVED').count()
+    if order_cnt > 3:
+        data = {"status":"exceeded"}
+        return HttpResponse( json.dumps( data ) )
+    new_order= OrderInfo()
+    new_order.order_id = request.POST['url[order_number]']
+    new_order.package = request.POST['url[product]']
+    new_order.email = request.POST['url[email]']
 
-    try:
-        new_order= OrderInfo()
-        new_order.order_id = request.POST['url[order_number]']
-        new_order.package = request.POST['url[product]']
-        new_order.email = request.POST['url[email]']
+    new_order.resume_url = request.POST['url[uploaded_resume]']
+    new_order.resume_worker_status = "assigned"
+    new_order.status = "resume worker assigned" 
+    new_order.resume_worker = user_id
+   
+    new_order.save()
+    notify_order(new_order.order_id,new_order.package,new_order.resume_worker.first_name,schedule=timedelta(minutes=24*60))
     
-        new_order.resume_url = request.POST['url[uploaded_resume]']
-        new_order.resume_worker_status = "assigned"
-        new_order.status = "resume worker assigned" 
-        new_order.resume_worker = UserProfile.objects.get(id = request.user.id)
-        new_order.save()
-    except:
-        pass
-
-    data = {"staus":"done"}
+    data = {"status":"done"}
     return HttpResponse( json.dumps( data ) )
 
 
@@ -294,7 +400,7 @@ def assign_worker(request):
 def userinfo(request,data=None):
     
     user = UserProfile.objects.filter(id =  request.user.id).first()
-    
+ 
         
     if request.POST.get("email") is not None:
         name = request.POST.get("name")

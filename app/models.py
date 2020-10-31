@@ -28,4 +28,8 @@ class OrderInfo(models.Model):
     resume_worker_status = models.TextField(max_length=500, blank=True)
     qc_wroker_status = models.TextField(max_length=500, blank=True)
     status = models.TextField(max_length=500, blank=True)
+    filename =  models.TextField( blank=True,null=True)
     rejected = models.IntegerField(default = 0)
+    worker_upload = models.IntegerField(default = 0)
+    qc_upload = models.IntegerField(default = 0)
+    rejection_reason =  models.TextField( blank=True,null=True)

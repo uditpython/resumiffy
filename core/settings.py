@@ -8,7 +8,12 @@ import os
 from decouple import config
 from unipath import Path
 import dj_database_url
-
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_HOST_USER = "uditmital86@gmail.com"
+EMAIL_HOST_PASSWORD = "Channo@114"
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROJECT_DIR = Path(__file__).parent
@@ -32,9 +37,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'widget_tweaks',
+    'background_task',
     'app'  # Enable the inner app 
 ]
-
+BACKGROUND_TASK_RUN_ASYNC = True
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
